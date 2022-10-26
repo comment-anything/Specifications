@@ -1,0 +1,15 @@
+-- Terms
+
+- Docker
+
+...
+
+- Container
+
+...
+
+- Cloud
+
+-- References
+
+[1] https://geekflare.com/docker-hosting-platforms/ 
