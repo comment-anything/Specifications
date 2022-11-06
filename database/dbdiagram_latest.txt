@@ -1,0 +1,164 @@
+
+Table "Users" {
+  "id" bigserial [pk]
+  "username" varchar [unique, not null]
+  "password" varchar [not null, note: 'Must be encrypted']
+  "email" varchar [unique, not null]
+  "created_at" timestamptz [not null, default: `now()`]
+  "last_login" timestamptz [not null, default: `now()`]
+  "profile_blurb" varchar
+  "banned" boolean
+
+Indexes {
+  username
+  email
+}
+}
+
+Table "DomainBans" {
+  "user" bigint
+  "banned_from" varchar
+  "banned_by" bigint
+  "banned_at" timestamptz [not null, default: `now()`]
+
+Indexes {
+  user
+  banned_by
+  banned_from
+}
+}
+
+Table "Comments" {
+  "id" bigserial [pk]
+  "pathid" bigint [not null]
+  "author" bigint [not null]
+  "content" varchar [not null]
+  "created_at" timestamptz [not null, default: `now()`]
+  "parent" bigint
+  "hidden" boolean [default: false]
+  "removed" boolean [default: false]
+
+Indexes {
+  author
+  pathid
+}
+}
+
+Table "VoteRecord" {
+  "commentId" bigint
+  "category" varchar
+  "userId" bigint
+  "value" int8
+  Indexes {
+    (commentId, category) [pk]
+  }
+}
+
+Table "Domains" {
+  "id" varchar [unique, pk, not null]
+}
+
+Table "Paths" {
+  "id" bigserial [pk]
+  "domain" varchar
+  "path" varchar
+
+Indexes {
+  (domain, path) [unique]
+}
+}
+
+Table "DomainModerators" {
+  "domain" varchar [not null]
+  "user" bigint [not null]
+  "granted_at" timestamptz [not null, default: `now()`]
+  "granted_by" bigint [not null]
+}
+
+Table "GlobalModerators" {
+  "user" bigint [pk]
+  "granted_at" timestamptz [not null, default: `now()`]
+  "granted_by" bigint [not null]
+}
+
+Table "Admins" {
+  "id" bigserial [pk]
+  "user" bigint
+}
+
+Table "Logs" {
+  "id" bigserial [pk]
+  "user" bigint
+  "ip" varchar
+  "url" varchar
+}
+
+Table "CommentModerationActions" {
+  "id" bigserial [pk]
+  "taken_by" bigint
+  "commentId" bigint
+  "reason" varchar
+  "taken_on" timestamptz
+  "set_hidden_to" boolean
+  "set_removed_to" boolean 
+  "associated_report" bigint
+}
+
+Table "BanActions" {
+  "id" bigserial [pk]
+  "taken_by" bigint
+  "target_user" bigint
+  "reason" varchar
+  "taken_on" timestamptz
+  "domain" varchar
+  "set_banned_to" boolean
+}
+
+Table "Reports" {
+  "id" bigserial [pk]
+  "reporting_user" bigint
+  "reason" varchar
+  "action_taken" boolean
+}
+
+Ref: "Users"."id" < "VoteRecord"."userId"
+Ref: "Comments"."id" < "VoteRecord"."commentId"
+
+Ref: "Users"."id" < "BanActions"."taken_by"
+Ref: "Users"."id" < "BanActions"."target_user"
+
+Ref: "Users"."id" < "Logs"."user"
+
+Ref:"Users"."id" < "DomainBans"."user"
+
+Ref:"Domains"."id" < "DomainBans"."banned_from"
+
+Ref:"Users"."id" < "DomainBans"."banned_by"
+
+Ref:"Paths"."id" < "Comments"."pathid"
+
+Ref:"Users"."id" < "Comments"."author"
+
+Ref:"Comments"."id" < "Comments"."parent"
+
+Ref:"Domains"."id" < "Paths"."domain"
+
+Ref:"Domains"."id" < "DomainModerators"."domain"
+
+Ref:"Users"."id" < "DomainModerators"."user"
+
+Ref:"Users"."id" < "DomainModerators"."granted_by"
+
+Ref:"Users"."id" < "GlobalModerators"."user"
+
+Ref:"Users"."id" < "GlobalModerators"."granted_by"
+
+Ref:"Users"."id" < "Admins"."user"
+
+Ref:"CommentModerationActions"."taken_by" < "Users"."id"
+Ref:"CommentModerationActions"."commentId" < "Comments"."id"
+Ref:"CommentModerationActions"."associated_report" < "Reports"."id"
+
+Ref:"Reports"."reporting_user" < "Users"."id"
+
+Ref: "Comments"."id" < "Comments"."pathid"
