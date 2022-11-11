@@ -1,0 +1,125 @@
+
+Table "Users" {
+  "id" bigserial [pk]
+  "username" varchar [unique, not null]
+  "password" varchar [not null, note: 'Must be encrypted']
+  "email" varchar [unique, not null]
+  "created_at" timestamptz [not null, default: `now()`]
+  "last_login" timestamptz [not null, default: `now()`]
+  "profile_blurb" varchar
+  "banned" boolean
+
+Indexes {
+  username
+  email
+}
+}
+
+Table "DomainBans" {
+  "user" bigint [ref: > Users.id]
+  "banned_from" varchar
+  "banned_by" bigint
+  "banned_at" timestamptz [not null, default: `now()`]
+
+Indexes {
+  user
+  banned_by
+  banned_from
+}
+}
+
+Table "Comments" {
+  "id" bigserial [pk]
+  "pathid" bigint [not null, ref: > Paths.id]
+  "author" bigint [not null, ref: > Users.id]
+  "content" varchar [not null]
+  "created_at" timestamptz [not null, default: `now()`]
+  "parent" bigint
+  "hidden" boolean [default: false]
+  "removed" boolean [default: false]
+
+Indexes {
+  author
+  pathid
+}
+}
+
+Table "VoteRecord" {
+  "commentId" bigint [ref: > Comments.id]
+  "category" varchar
+  "userId" bigint [ref: > Users.id]
+  "value" int8
+  Indexes {
+    (commentId, category) [pk]
+  }
+}
+
+Table "Domains" {
+  "id" varchar [unique, pk, not null]
+}
+
+Table "Paths" {
+  "id" bigserial [pk]
+  "domain" varchar [ref: > Domains.id]
+  "path" varchar
+
+Indexes {
+  (domain, path) [unique]
+}
+}
+
+Table "DomainModerators" {
+  "id" bigint
+  "domain" varchar [not null, ref: > Domains.id]
+  "user" bigint [not null, ref:> Users.id]
+  "granted_at" timestamptz [not null, default: `now()`]
+  "granted_by" bigint [not null, ref: > Users.id]
+}
+
+Table "GlobalModerators" {
+  "id" bigint
+  "user" bigint [pk, ref: > Users.id]
+  "granted_at" timestamptz [not null, default: `now()`]
+  "granted_by" bigint [not null, ref: > Users.id]
+}
+
+Table "Admins" {
+  "id" bigserial [pk]
+  "user" bigint [ref: > Users.id]
+}
+
+Table "Logs" {
+  "id" bigserial [pk]
+  "user" bigint [ref: > Users.id]
+  "ip" varchar
+  "url" varchar
+}
+
+Table "CommentModerationActions" {
+  "id" bigserial [pk]
+  "taken_by" bigint [ref: > Users.id]
+  "commentId" bigint [ref: > Comments.id]
+  "reason" varchar
+  "taken_on" timestamptz
+  "set_hidden_to" boolean
+  "set_removed_to" boolean 
+  "associated_report" bigint [ref:> Reports.id]
+}
+
+Table "BanActions" {
+  "id" bigserial [pk]
+  "taken_by" bigint [ref:> Users.id]
+  "target_user" bigint [ref: > Users.id]
+  "reason" varchar
+  "taken_on" timestamptz
+  "domain" varchar [ref: > Domains.id]
+  "set_banned_to" boolean
+}
+
+Table "Reports" {
+  "id" bigserial [pk]
+  "reporting_user" bigint [ref: > Users.id]
+  "comment" bigint [ref: > Comments.id]
+  "reason" varchar
+  "action_taken" boolean
+}
